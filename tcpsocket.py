@@ -93,5 +93,3 @@ class TCPsocket:
     def close(self):
         if not (self.sock is None):
             self.sock.close()
-
-

@@ -1,4 +1,8 @@
+from io import FileIO
 import logging, sys
+from urllib import parse
+
+from fileio import FileIO
 from tcpsocket import TCPsocket
 from tcprequest import Request
 from queue import Queue
@@ -15,28 +19,54 @@ def main(): # function, method are the same
     elif int(sys.argv[1]) != 1:
         sys.exit("Can't run more than one thread currently, exiting...")
 
-    try:
-        urlfile = open(sys.argv[2], 'r')
-    except FileNotFoundError:
-        log.error("File Not Found")
-        sys.exit("File not found, exiting...")
+    # open file for read only
+    fileop = FileIO()
+    urlfile = fileop.openro(sys.argv[2])
+
+    # read file line by line, put into queue
     try:
         for line in urlfile:
             urlqueue.put(line)
     except IOError:
         log.error("File read error")
         sys.exit("File read error, exiting...")
-
-
     
+    hosts = set()
+    ips = set()
+
+    # main loop creating sockets for each website
     while not urlqueue.empty():
+        # get url from queue, print, parse
+        url = urlqueue.get()
+        print("URL: {}".format(url.strip()))
+        parsedurl = urlparse(url)
+
+
+        # checking for duplicate hosts, if set length is different, not a dup
+        hostslen = len(hosts)
+        hosts.add(parsedurl.netloc)
+        if hostslen == len(hosts):
+            log.debug("Duplicate Host... skipping")
+            continue
+
         mysocket = TCPsocket() # create an object of TCP socket
         mysocket.createSocket()
-        url = urlqueue.get()
-        print("URL: {}".format(url))
-        parsedurl = urlparse(url)
+
+        # if no port specified, specify port 80 
         ip = mysocket.getIP(parsedurl.netloc)
-        port  = 80
+
+        # checking for duplicate ips, if length is different, not a dup
+        ipslen = len(ips)
+        ips.add(ip)
+        if ipslen == len(ips):
+            log.debug("Duplicate IPs... skipping")
+            continue
+
+        if not parsedurl.port:
+            port  = 80
+        else:
+            port = parsedurl.port
+
         mysocket.connect(ip, port)
 
         # build our request
@@ -49,6 +79,7 @@ def main(): # function, method are the same
         print("data received: ", data)
 
         mysocket.close()
+
 
 # call main() method:
 if __name__ == "__main__":
