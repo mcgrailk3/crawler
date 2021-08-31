@@ -14,11 +14,13 @@ def main(): # function, method are the same
 
     urlqueue = Queue()
 
-    if len(sys.argv) != 3:
+    if len(sys.argv) != 2:
         sys.exit("Invalid amount of args, exiting...")
+    """
     elif int(sys.argv[1]) != 1:
         sys.exit("Can't run more than one thread currently, exiting...")
-
+    """
+    """
     # open file for read only
     fileop = FileIO()
     urlfile = fileop.openro(sys.argv[2])
@@ -33,34 +35,38 @@ def main(): # function, method are the same
     
     hosts = set()
     ips = set()
-
+    """
+    urlqueue.put(sys.argv[1])
     # main loop creating sockets for each website
     while not urlqueue.empty():
         # get url from queue, print, parse
         url = urlqueue.get()
         print("URL: {}".format(url.strip()))
         parsedurl = urlparse(url)
+        print(parsedurl)
 
-
+        """
         # checking for duplicate hosts, if set length is different, not a dup
         hostslen = len(hosts)
         hosts.add(parsedurl.netloc)
         if hostslen == len(hosts):
             log.debug("Duplicate Host... skipping")
             continue
-
+        """
         mysocket = TCPsocket() # create an object of TCP socket
         mysocket.createSocket()
 
         # if no port specified, specify port 80 
         ip = mysocket.getIP(parsedurl.netloc)
 
+        """
         # checking for duplicate ips, if length is different, not a dup
         ipslen = len(ips)
         ips.add(ip)
         if ipslen == len(ips):
             log.debug("Duplicate IPs... skipping")
             continue
+        """
 
         if not parsedurl.port:
             port  = 80
