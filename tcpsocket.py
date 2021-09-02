@@ -54,6 +54,7 @@ class TCPsocket:
             self.log.error("Failed to connect: {}".format(e))
             self.sock.close()
             self.sock = None
+            return -1
 
     # return the number of bytes sent
     def send(self, request):

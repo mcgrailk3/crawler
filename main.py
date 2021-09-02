@@ -65,14 +65,21 @@ def main(): # function, method are the same
             url = "//" + url
         
         parsedurl = urlparse(url)
-        # print(parsedurl)
 
         # if no port present, make port default 80
         if not parsedurl.port:
             port  = 80
         else:
             port = parsedurl.port
-        print(f"Parsing URL... host {parsedurl.hostname}, port {port}, request /{parsedurl.path}")
+        pathquery = ""
+        if parsedurl.path:
+            pathquery = parsedurl.path
+        else:
+            pathquery = "/"
+        if parsedurl.query:
+            pathquery = pathquery + "?"+parsedurl.query
+
+        print(f"\tParsing URL... host {parsedurl.hostname}, port {port}, request {pathquery}")
         # checking for duplicate hosts, if set length is different, not a dup
         hostslen = len(hosts)
         hosts.add(parsedurl.hostname)
@@ -84,7 +91,7 @@ def main(): # function, method are the same
         mysocket.setlogging(loglevel)
         mysocket.createSocket()
 
-        print("Doing DNS... ", end='')
+        print("\tDoing DNS... ", end='')
         # start measuring time, set start to current time
         start = time.time()
         # get the ip of hostname, dns lookup
@@ -102,9 +109,12 @@ def main(): # function, method are the same
 
 
 
-        print("Connecting on page... ", end='')
+        print("\tConnecting on page... ", end='')
         start = time.time()
-        mysocket.connect(ip, port)
+        
+        if mysocket.connect(ip, port) == -1:
+            print("failed")
+            continue
         end = time.time()
         print(f"done in {int((end-start)*1000)} ms ")
 
@@ -112,7 +122,7 @@ def main(): # function, method are the same
         headrequest = Request()
         head = headrequest.headRequest(parsedurl.hostname)
         # send out request
-        print("Loading... ", end='')
+        print("\tLoading... ", end='')
         start = time.time()
         mysocket.send(head)
         data, amtbytes = mysocket.receive() # receive a reply from the server
@@ -120,26 +130,21 @@ def main(): # function, method are the same
         print(f"done in {int((end-start)*1000)} ms with {amtbytes} bytes")
         if not data:
             continue
-        print("--------------------------")
-        print(data)
+        # split data into lines to parse through
         response = data.splitlines()
+        # split first line to get status code, easier than using regexs
+        responsecode = response[0].split(" ")
+        print(f"\tVerifying header... status code {responsecode[1]}")
+        print("\n---------------------------------------")
+        print(data.strip())
+        
         mysocket.close()
-        code4xx = re.compile(r'4[0-9][0-9]')
-        code2xx = re.compile(r'2[0-9][0-9]')
-        code3xx = re.compile(r'3[0-9][0-9]')
-        # build our request
-        if code4xx.search(response[0]):
-            print('{}'.format(response[0]))
-        elif code2xx.search(response[0]):
-            print('200 request shown')
-            continue
-        elif code3xx.search(response[0]):
-            print('300 request shown')
-            continue
-        else:
-            print('**********Unhandled status code*********')
+
+        # if response is 200, then break out of loop, else keep going to build get request
+        if responsecode[1] == "200":
             continue
         
+        # build our request
         getrequest = Request()
         get = getrequest.getRequest(parsedurl.hostname, parsedurl.path, parsedurl.query)
 
@@ -148,9 +153,9 @@ def main(): # function, method are the same
 
         # send out request
         mysocket.send(get)
-        data = mysocket.receive() # receive a reply from the server
-        print("data received: ", data)
-
+        data, bytesrecvd = mysocket.receive() # receive a reply from the server
+        # print("data received: ", data)
+        print(f"Received {bytesrecvd} bytes, will parse later")
         mysocket.close()
 
 

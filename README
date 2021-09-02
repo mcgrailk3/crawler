@@ -7,3 +7,26 @@ Usage:
 
 Sample output: 
 
+PS D:\Documents\School\Grad\CPS570\crawler> .\main.py http://www.yahoo.com
+URL: http://www.yahoo.com
+        Parsing URL... host www.yahoo.com, port 80, request /
+        Doing DNS... done in 8 ms, found 74.6.143.25 
+        Connecting on page... done in 52 ms 
+        Loading... done in 125 ms with 1044 bytes
+        Verifying header... status code 301
+
+---------------------------------------
+HTTP/1.0 301 Moved Permanently
+Date: Thu, 02 Sep 2021 23:46:58 GMT
+Server: ATS
+Cache-Control: no-store, no-cache
+Content-Type: text/html
+Content-Language: en
+Connection: keep-alive
+Content-Security-Policy: frame-ancestors 'self' https://*.builtbygirls.com https://*.rivals.com https://*.engadget.com https://*.intheknow.com https://*.autoblog.com https://*.techcrunch.com https://*.yahoo.com https://*.aol.com https://*.huffingtonpost.com https://*.oath.com https://*.search.yahoo.com https://*.search.aol.com https://*.search.huffpost.com https://*.verizonmedia.com https://*.publishing.oath.com https://*.autoblog.com; sandbox allow-forms 
+allow-same-origin allow-scripts allow-popups allow-popups-to-escape-sandbox allow-presentation; report-uri https://csp.yahoo.com/beacon/csp?src=ats&site=frontpage&region=US&lang=en-US&device=&yrid=6nd8t65gj2oji&partner=;
+X-Frame-Options: SAMEORIGIN
+X-XSS-Protection: 1; report="https://csp.yahoo.com/beacon/csp?src=fp-hpkp-www"
+Location: https://www.yahoo.com/robots.txt
+Content-Length: 8
+Received 4578 bytes, will parse later
