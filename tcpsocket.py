@@ -69,7 +69,7 @@ class TCPsocket:
         reply = bytearray()    # b'', local variable, bytearray is multable
         bytesRecd = 0   # local integer
 
-        self.sock.setblocking(0)    # flag 0 to set non-blocking mode of the socket
+        self.sock.setblocking(1)    # flag 0 to set non-blocking mode of the socket
         ready = select.select([self.sock], [], [], TIMEOUT) # https://docs.python.org/3/library/select.html
         if ready[0] == []:     # timeout
             self.log.debug("Time out on", self.host)
@@ -87,7 +87,7 @@ class TCPsocket:
             self.log.error("socket error in receive: {}".format(e))
             self.sock.close()
             self.sock = None
-        return str(reply)
+        return reply.decode('utf-8')
 
     # Close socket
     def close(self):

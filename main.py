@@ -1,5 +1,5 @@
 from io import FileIO
-import logging, sys
+import logging, sys, time, re
 from urllib import parse
 
 from fileio import FileIO
@@ -40,11 +40,10 @@ def main(): # function, method are the same
         url = urlqueue.get()
         print("URL: {}".format(url.strip()))
         parsedurl = urlparse(url)
-
-
+        
         # checking for duplicate hosts, if set length is different, not a dup
         hostslen = len(hosts)
-        hosts.add(parsedurl.netloc)
+        hosts.add(parsedurl.hostname)
         if hostslen == len(hosts):
             log.debug("Duplicate Host... skipping")
             continue
@@ -53,8 +52,11 @@ def main(): # function, method are the same
         mysocket.createSocket()
 
         # if no port specified, specify port 80 
-        ip = mysocket.getIP(parsedurl.netloc)
-
+        print("Doing DNS... ", end='')
+        start = time.time()
+        ip = mysocket.getIP(parsedurl.hostname)
+        end = time.time()
+        print("done in {} ms, found {} ".format((end-start)*1000, ip))
         # checking for duplicate ips, if length is different, not a dup
         ipslen = len(ips)
         ips.add(ip)
@@ -67,14 +69,47 @@ def main(): # function, method are the same
         else:
             port = parsedurl.port
 
+        print("Connecting on page... ", end='')
+        start = time.time()
         mysocket.connect(ip, port)
+        end = time.time()
+        print("done in {} ms ".format((end-start)*1000))
 
         # build our request
-        myrequest = Request()
-        msg = myrequest.getRequest(parsedurl.netloc, parsedurl.path, parsedurl.query)
+        headrequest = Request()
+        head = headrequest.headRequest(parsedurl.hostname)
+        # send out request
+        mysocket.send(head)
+        data = mysocket.receive() # receive a reply from the server
+        print("data received: ", data)
+        if not data:
+            continue
+        response = data.splitlines()
+        mysocket.close()
+        code4xx = re.compile(r'4[0-9][0-9]')
+        code2xx = re.compile(r'2[0-9][0-9]')
+        code3xx = re.compile(r'3[0-9][0-9]')
+        # build our request
+        if code4xx.search(response[0]):
+            print('{}'.format(response[0]))
+        elif code2xx.search(response[0]):
+            print('200 request shown')
+            continue
+        elif code3xx.search(response[0]):
+            print('300 request shown')
+            continue
+        else:
+            print('**********Unhandled status code*********')
+            continue
+        
+        getrequest = Request()
+        get = getrequest.getRequest(parsedurl.hostname, parsedurl.path, parsedurl.query)
+
+        mysocket.createSocket()
+        mysocket.connect(ip, port)
 
         # send out request
-        mysocket.send(msg)
+        mysocket.send(get)
         data = mysocket.receive() # receive a reply from the server
         print("data received: ", data)
 
