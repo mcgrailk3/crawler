@@ -1,3 +1,6 @@
+# Student Names: Garrett Fitzgerald, Kevin McGrail
+# ID num:  1016818720, 1013412930
+
 from fileio import FileIO
 import logging, sys
 

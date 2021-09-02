@@ -1,3 +1,6 @@
+# Student Names: Garrett Fitzgerald, Kevin McGrail
+# ID num:  1016818720, 1013412930
+
 import logging, sys, time, re
 from urllib import parse
 
@@ -9,17 +12,20 @@ from urllib.parse import urlparse
 from input import Input
 
 def main(): # function, method are the same
+    # loglevel setup
+    loglevel = "INFO"
+    # loglevel = "DEBUG"
 
     cmdlinemode = "single"
     txtinputmode = "textfile"
 
     # set mode, either cmd line input or txt file, for part 1 we want cmdlinemode, for all others, we want txtinputmode
-    # mode = cmdlinemode
-    mode = txtinputmode
+    mode = cmdlinemode
+    # mode = txtinputmode
     # set default number of threads to 1
     numthreads = 1
     log = logging.getLogger(__name__)
-    logging.basicConfig(level=logging.DEBUG)
+    log.setLevel(loglevel)
 
     urlqueue = Queue()
     if mode is txtinputmode:                        # text input mode, check for thread number and file to parse
@@ -52,14 +58,21 @@ def main(): # function, method are the same
         # get url from queue, print, parse
         url = urlqueue.get()
 
+        print(f"URL: {url.strip()}")
+
         # check if scheme is in url, if not add // for urlparsing 
         if not re.match('(?:http|ftp|https)://', url):
             url = "//" + url
-
-        print(f"URL: {url.strip()}")
+        
         parsedurl = urlparse(url)
         # print(parsedurl)
 
+        # if no port present, make port default 80
+        if not parsedurl.port:
+            port  = 80
+        else:
+            port = parsedurl.port
+        print(f"Parsing URL... host {parsedurl.hostname}, port {port}, request /{parsedurl.path}")
         # checking for duplicate hosts, if set length is different, not a dup
         hostslen = len(hosts)
         hosts.add(parsedurl.hostname)
@@ -68,6 +81,7 @@ def main(): # function, method are the same
             continue
 
         mysocket = TCPsocket() # create an object of TCP socket
+        mysocket.setlogging(loglevel)
         mysocket.createSocket()
 
         print("Doing DNS... ", end='')
@@ -78,7 +92,7 @@ def main(): # function, method are the same
         # get the end time, set end to current time
         end = time.time()
         # print how long it took, end - start time * 1000 to get in milliseconds
-        print(f"done in {(end-start)*1000} ms, found {ip} ")
+        print(f"done in {int((end-start)*1000)} ms, found {ip} ")
         # checking for duplicate ips, if length is different, not a dup
         ipslen = len(ips)
         ips.add(ip)
@@ -86,27 +100,28 @@ def main(): # function, method are the same
             log.debug("Duplicate IPs... skipping")
             continue
 
-        # if no port present, make port default 80
-        if not parsedurl.port:
-            port  = 80
-        else:
-            port = parsedurl.port
+
 
         print("Connecting on page... ", end='')
         start = time.time()
         mysocket.connect(ip, port)
         end = time.time()
-        print(f"done in {(end-start)*1000} ms ")
+        print(f"done in {int((end-start)*1000)} ms ")
 
         # build our request
         headrequest = Request()
         head = headrequest.headRequest(parsedurl.hostname)
         # send out request
+        print("Loading... ", end='')
+        start = time.time()
         mysocket.send(head)
-        data = mysocket.receive() # receive a reply from the server
-        print("data received: ", data)
+        data, amtbytes = mysocket.receive() # receive a reply from the server
+        end = time.time()
+        print(f"done in {int((end-start)*1000)} ms with {amtbytes} bytes")
         if not data:
             continue
+        print("--------------------------")
+        print(data)
         response = data.splitlines()
         mysocket.close()
         code4xx = re.compile(r'4[0-9][0-9]')

@@ -1,3 +1,5 @@
+# Student Names: Garrett Fitzgerald, Kevin McGrail
+# ID num:  1016818720, 1013412930
 
 # resources: https://docs.python.org/3/howto/sockets.html
 
@@ -13,8 +15,11 @@ class TCPsocket:
         self.sock = None  # each object's instance variables
         self.host = ""  # remote host name
         self.log = logging.getLogger(__name__)
-        logging.basicConfig(level=logging.DEBUG)
-        self.log.debug("create an object of TCPsocket")
+        # logging.basicConfig(level=logging.DEBUG)
+        #self.log.debug("create an object of TCPsocket")
+
+    def setlogging(self, level):
+        self.log.setLevel(level)
 
     def createSocket(self):
         try:
@@ -77,7 +82,7 @@ class TCPsocket:
             return ""
         # else reader has data to read
         try:
-            while True:         # use a loop to receive data until we receive all data
+            while bytesRecd < 96000000:         # use a loop to receive data until we receive all data, up to 96 MB
                 data = self.sock.recv(BUF_SIZE)  # returned chunk of data with max length BUF_SIZE. data is in bytes
                 if data == b'':  # if empty bytes
                    break
@@ -88,7 +93,7 @@ class TCPsocket:
             self.log.error("socket error in receive: {}".format(e))
             self.sock.close()
             self.sock = None
-        return reply.decode('utf-8')
+        return reply.decode('utf-8'), bytesRecd
 
     # Close socket
     def close(self):
