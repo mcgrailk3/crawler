@@ -40,6 +40,7 @@ class TCPsocket:
     # connect to a remote server: IP address, port
     def connect(self, ip, port):
         if self.sock is None or ip is None:
+            self.sock = None
             return
         try:
             self.sock.connect((ip, port))   # server address is defined by (ip, port)

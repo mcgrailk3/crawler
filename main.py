@@ -1,4 +1,3 @@
-from io import FileIO
 import logging, sys, time, re
 from urllib import parse
 
@@ -7,30 +6,44 @@ from tcpsocket import TCPsocket
 from tcprequest import Request
 from queue import Queue
 from urllib.parse import urlparse
+from input import Input
 
 def main(): # function, method are the same
+
+    cmdlinemode = "single"
+    txtinputmode = "textfile"
+
+    # set mode, either cmd line input or txt file, for part 1 we want cmdlinemode, for all others, we want txtinputmode
+    # mode = cmdlinemode
+    mode = txtinputmode
+    # set default number of threads to 1
+    numthreads = 1
     log = logging.getLogger(__name__)
     logging.basicConfig(level=logging.DEBUG)
 
     urlqueue = Queue()
+    if mode is txtinputmode:                        # text input mode, check for thread number and file to parse
+        if len(sys.argv) != 3:
+            sys.exit("Invalid amount of args, exiting...")
+        elif int(sys.argv[1]) != 1:
+            sys.exit("Can't run more than one thread currently, exiting...")
 
-    if len(sys.argv) != 3:
-        sys.exit("Invalid amount of args, exiting...")
-    elif int(sys.argv[1]) != 1:
-        sys.exit("Can't run more than one thread currently, exiting...")
+        # open file for read only
+        fileop = FileIO()
+        urlfile = fileop.openro(sys.argv[2])
+        numthreads = sys.argv[1]
+        # read file line by line, put into queue
+        try:
+            for line in urlfile:
+                urlqueue.put(line)
+        except IOError:
+            log.error("File read error")
+            sys.exit("File read error, exiting...")
+    elif mode is cmdlinemode:                       # command line mode, check for 1 url
+        if len(sys.argv) != 2:
+            sys.exit("Invalid amount of args, exiting...")
+        urlqueue.put(sys.argv[1])
 
-    # open file for read only
-    fileop = FileIO()
-    urlfile = fileop.openro(sys.argv[2])
-
-    # read file line by line, put into queue
-    try:
-        for line in urlfile:
-            urlqueue.put(line)
-    except IOError:
-        log.error("File read error")
-        sys.exit("File read error, exiting...")
-    
     hosts = set()
     ips = set()
 
@@ -38,9 +51,15 @@ def main(): # function, method are the same
     while not urlqueue.empty():
         # get url from queue, print, parse
         url = urlqueue.get()
-        print("URL: {}".format(url.strip()))
+
+        # check if scheme is in url, if not add // for urlparsing 
+        if not re.match('(?:http|ftp|https)://', url):
+            url = "//" + url
+
+        print(f"URL: {url.strip()}")
         parsedurl = urlparse(url)
-        
+        # print(parsedurl)
+
         # checking for duplicate hosts, if set length is different, not a dup
         hostslen = len(hosts)
         hosts.add(parsedurl.hostname)
@@ -51,12 +70,15 @@ def main(): # function, method are the same
         mysocket = TCPsocket() # create an object of TCP socket
         mysocket.createSocket()
 
-        # if no port specified, specify port 80 
         print("Doing DNS... ", end='')
+        # start measuring time, set start to current time
         start = time.time()
+        # get the ip of hostname, dns lookup
         ip = mysocket.getIP(parsedurl.hostname)
+        # get the end time, set end to current time
         end = time.time()
-        print("done in {} ms, found {} ".format((end-start)*1000, ip))
+        # print how long it took, end - start time * 1000 to get in milliseconds
+        print(f"done in {(end-start)*1000} ms, found {ip} ")
         # checking for duplicate ips, if length is different, not a dup
         ipslen = len(ips)
         ips.add(ip)
@@ -64,6 +86,7 @@ def main(): # function, method are the same
             log.debug("Duplicate IPs... skipping")
             continue
 
+        # if no port present, make port default 80
         if not parsedurl.port:
             port  = 80
         else:
@@ -73,7 +96,7 @@ def main(): # function, method are the same
         start = time.time()
         mysocket.connect(ip, port)
         end = time.time()
-        print("done in {} ms ".format((end-start)*1000))
+        print(f"done in {(end-start)*1000} ms ")
 
         # build our request
         headrequest = Request()
