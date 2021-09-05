@@ -37,7 +37,7 @@ class TCPsocket:
         try:
             ip = socket.gethostbyname(hostname)   # ip is a local variable to getIP(hostname), ip is of string type
         except socket.gaierror:
-            self.log.warning("Failed to gethostbyname")
+            self.log.error("Failed to gethostbyname")
             return None
         return ip
 
@@ -75,13 +75,15 @@ class TCPsocket:
             return ""
         reply = bytearray()    # b'', local variable, bytearray is multable
         bytesRecd = 0   # local integer
-
+        self.sock.settimeout(TIMEOUT)
+        """
         self.sock.setblocking(1)    # flag 0 to set non-blocking mode of the socket
         ready = select.select([self.sock], [], [], TIMEOUT) # https://docs.python.org/3/library/select.html
         if ready[0] == []:     # timeout
             self.log.debug("Time out on", self.host)
             return ""
         # else reader has data to read
+        """
         try:
             while bytesRecd < 96000000:         # use a loop to receive data until we receive all data, up to 96 MB
                 data = self.sock.recv(BUF_SIZE)  # returned chunk of data with max length BUF_SIZE. data is in bytes

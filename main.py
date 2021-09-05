@@ -9,7 +9,7 @@ from tcpsocket import TCPsocket
 from tcprequest import Request
 from queue import Queue
 from urllib.parse import urlparse
-from input import Input
+
 
 def main(): # function, method are the same
     # loglevel setup
@@ -79,14 +79,18 @@ def main(): # function, method are the same
         if parsedurl.query:
             pathquery = pathquery + "?"+parsedurl.query
 
-        print(f"\tParsing URL... host {parsedurl.hostname}, port {port}, request {pathquery}")
+        #print(f"\tParsing URL... host {parsedurl.hostname}, port {port}, request {pathquery}")
+        print(f"\tParsing URL... host {parsedurl.hostname}, port {port}")
+    
         # checking for duplicate hosts, if set length is different, not a dup
+        print(f"\t\033[1mChecking host uniqueness... ", end='')
         hostslen = len(hosts)
         hosts.add(parsedurl.hostname)
         if hostslen == len(hosts):
+            print(f"failed\033[0m")
             log.debug("Duplicate Host... skipping")
             continue
-
+        print(f"passed\033[0m")
         mysocket = TCPsocket() # create an object of TCP socket
         mysocket.setlogging(loglevel)
         mysocket.createSocket()
@@ -100,16 +104,57 @@ def main(): # function, method are the same
         end = time.time()
         # print how long it took, end - start time * 1000 to get in milliseconds
         print(f"done in {int((end-start)*1000)} ms, found {ip} ")
+        if ip is None:
+            continue
         # checking for duplicate ips, if length is different, not a dup
+        print(f"\t\033[1mChecking IP uniqueness... ", end='')
         ipslen = len(ips)
         ips.add(ip)
         if ipslen == len(ips):
             log.debug("Duplicate IPs... skipping")
+            print(f"failed\033[0m")
             continue
+        print(f"passed\033[0m")
 
 
+        print(f"\t\033[1mConnecting on robots... ", end='')
+        start = time.time()
+        
+        if mysocket.connect(ip, port) == -1:
+            print("failed\033[0m")
+            continue
+        end = time.time()
+        print(f"done in {int((end-start)*1000)} ms \033[0m")
 
-        print("\tConnecting on page... ", end='')
+        # build our request
+        headrequest = Request()
+        head = headrequest.headRequest(parsedurl.hostname)
+        # send out request
+        print("\t\033[1mLoading... ", end='')
+        start = time.time()
+        mysocket.send(head)
+        data, amtbytes = mysocket.receive() # receive a reply from the server
+        end = time.time()
+        print(f"done in {int((end-start)*1000)} ms with {amtbytes} bytes\033[0m")
+        if not data:
+            continue
+        # split data into lines to parse through
+        response = data.splitlines()
+        # split first line to get status code, easier than using regexs
+        responsecode = response[0].split(" ")
+        print(f"\t\033[1mVerifying header... status code {responsecode[1]}\033[0m")
+        #print("\n---------------------------------------")
+        #print(data.strip())
+        
+        mysocket.close()
+
+        # if response is 200, then break out of loop, else keep going to build get request
+        if responsecode[1] == "200":
+           continue
+        
+        mysocket.createSocket()
+
+        print(f"      * Connecting on page... ", end='')
         start = time.time()
         
         if mysocket.connect(ip, port) == -1:
@@ -119,12 +164,13 @@ def main(): # function, method are the same
         print(f"done in {int((end-start)*1000)} ms ")
 
         # build our request
-        headrequest = Request()
-        head = headrequest.headRequest(parsedurl.hostname)
-        # send out request
+        getrequest = Request()
+        get = getrequest.getRequest(parsedurl.hostname, parsedurl.path, parsedurl.query)
+
+
         print("\tLoading... ", end='')
         start = time.time()
-        mysocket.send(head)
+        mysocket.send(get)
         data, amtbytes = mysocket.receive() # receive a reply from the server
         end = time.time()
         print(f"done in {int((end-start)*1000)} ms with {amtbytes} bytes")
@@ -135,27 +181,11 @@ def main(): # function, method are the same
         # split first line to get status code, easier than using regexs
         responsecode = response[0].split(" ")
         print(f"\tVerifying header... status code {responsecode[1]}")
-        print("\n---------------------------------------")
-        print(data.strip())
-        
-        mysocket.close()
-
-        # if response is 200, then break out of loop, else keep going to build get request
-        if responsecode[1] == "200":
-            continue
-        
-        # build our request
-        getrequest = Request()
-        get = getrequest.getRequest(parsedurl.hostname, parsedurl.path, parsedurl.query)
-
-        mysocket.createSocket()
-        mysocket.connect(ip, port)
-
-        # send out request
-        mysocket.send(get)
-        data, bytesrecvd = mysocket.receive() # receive a reply from the server
-        # print("data received: ", data)
-        print(f"Received {bytesrecvd} bytes, will parse later")
+        print("      + Parsing page... ", end='')
+        start = time.time()
+        links = data.count('href')
+        end = time.time()
+        print(f"done in {int((end-start)*1000)} ms with {links} links")
         mysocket.close()
 
 
