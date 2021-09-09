@@ -9,7 +9,7 @@ from tcpsocket import TCPsocket
 from tcprequest import Request
 from queue import Queue
 from urllib.parse import urlparse
-
+from input import Input
 
 def main(): # function, method are the same
     # loglevel setup
@@ -20,35 +20,17 @@ def main(): # function, method are the same
     txtinputmode = "textfile"
 
     # set mode, either cmd line input or txt file, for part 1 we want cmdlinemode, for all others, we want txtinputmode
-    mode = cmdlinemode
-    # mode = txtinputmode
+    # mode = cmdlinemode
+    mode = txtinputmode
     # set default number of threads to 1
     numthreads = 1
     log = logging.getLogger(__name__)
     log.setLevel(loglevel)
 
     urlqueue = Queue()
-    if mode is txtinputmode:                        # text input mode, check for thread number and file to parse
-        if len(sys.argv) != 3:
-            sys.exit("Invalid amount of args, exiting...")
-        elif int(sys.argv[1]) != 1:
-            sys.exit("Can't run more than one thread currently, exiting...")
 
-        # open file for read only
-        fileop = FileIO()
-        urlfile = fileop.openro(sys.argv[2])
-        numthreads = sys.argv[1]
-        # read file line by line, put into queue
-        try:
-            for line in urlfile:
-                urlqueue.put(line)
-        except IOError:
-            log.error("File read error")
-            sys.exit("File read error, exiting...")
-    elif mode is cmdlinemode:                       # command line mode, check for 1 url
-        if len(sys.argv) != 2:
-            sys.exit("Invalid amount of args, exiting...")
-        urlqueue.put(sys.argv[1])
+    inpobj = Input()
+    numthreads = inpobj.process(urlqueue, sys.argv, mode)
 
     hosts = set()
     ips = set()

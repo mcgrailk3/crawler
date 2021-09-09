@@ -14,8 +14,10 @@ class Input:
     def process(self, queue, args, mode):
         if mode is self.__cmdlinemode:
             self.singleurl(queue, args)
+            return 1
         elif mode is self.__txtinputmode:
-            self.urltext(queue, args)
+            amtthreads = self.urltext(queue, args)
+            return amtthreads
 
     def singleurl(self, queue, args):
         if len(args) != 2:
@@ -25,9 +27,8 @@ class Input:
     def urltext(self, queue, args):
         if len(args) != 3:
             sys.exit("Invalid amount of args, exiting...")
-        elif int(args) != 1:
+        elif int(args[1]) != 1:
             sys.exit("Can't run more than one thread currently, exiting...")
-
         # open file for read only
         fileop = FileIO()
         urlfile = fileop.openro(args[2])
@@ -36,6 +37,7 @@ class Input:
         try:
             for line in urlfile:
                 queue.put(line)
+            return numthreads
         except IOError:
             self.log.error("File read error")
             sys.exit("File read error, exiting...")
