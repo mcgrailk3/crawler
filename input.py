@@ -1,6 +1,7 @@
 # Student Names: Garrett Fitzgerald, Kevin McGrail
 # ID num:  1016818720, 1013412930
 
+from re import S
 from fileio import FileIO
 import logging, sys
 
@@ -8,6 +9,7 @@ class Input:
     def __init__(self):
         self.__cmdlinemode = "single"
         self.__txtinputmode = "textfile"
+        self.__filename = ""
         self.log = logging.getLogger(__name__)
         logging.basicConfig(level=logging.DEBUG)
 
@@ -16,8 +18,8 @@ class Input:
             self.singleurl(queue, args)
             return 1
         elif mode is self.__txtinputmode:
-            amtthreads = self.urltext(queue, args)
-            return amtthreads
+            amtthreads, sizeoffile = self.urltext(queue, args)
+            return amtthreads, sizeoffile, self.__filename
 
     def singleurl(self, queue, args):
         if len(args) != 2:
@@ -32,12 +34,15 @@ class Input:
         # open file for read only
         fileop = FileIO()
         urlfile = fileop.openro(args[2])
+        self.__filename = args[2]
         numthreads = args[1]
         # read file line by line, put into queue
         try:
             for line in urlfile:
                 queue.put(line)
-            return numthreads
+            sizeoffile = fileop.getsize()
+            fileop.close()
+            return numthreads, sizeoffile
         except IOError:
             self.log.error("File read error")
             sys.exit("File read error, exiting...")

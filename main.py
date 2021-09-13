@@ -2,7 +2,7 @@
 # ID num:  1016818720, 1013412930
 
 import logging, sys, time, re
-from urllib import parse
+from urlparser import URLParser
 
 from fileio import FileIO
 from tcpsocket import TCPsocket
@@ -30,8 +30,8 @@ def main(): # function, method are the same
     urlqueue = Queue()
 
     inpobj = Input()
-    numthreads = inpobj.process(urlqueue, sys.argv, mode)
-
+    numthreads, sizeoffile, filename = inpobj.process(urlqueue, sys.argv, mode)
+    print(f"Opened {filename} with size {sizeoffile} bytes")
     hosts = set()
     ips = set()
 
@@ -41,38 +41,23 @@ def main(): # function, method are the same
         url = urlqueue.get()
 
         print(f"URL: {url.strip()}")
+        urlparseobj = URLParser()
+        hostname, port, path, query, pathquery, scheme = urlparseobj.parse(url)
 
-        # check if scheme is in url, if not add // for urlparsing 
-        if not re.match('(?:http|ftp|https)://', url):
-            url = "//" + url
-        
-        parsedurl = urlparse(url)
-
-        # if no port present, make port default 80
-        if not parsedurl.port:
-            port  = 80
-        else:
-            port = parsedurl.port
-        pathquery = ""
-        if parsedurl.path:
-            pathquery = parsedurl.path
-        else:
-            pathquery = "/"
-        if parsedurl.query:
-            pathquery = pathquery + "?"+parsedurl.query
-
-        #print(f"\tParsing URL... host {parsedurl.hostname}, port {port}, request {pathquery}")
-        print(f"\tParsing URL... host {parsedurl.hostname}, port {port}")
+        #print(f"\tParsing URL... host {hostname}, port {port}, request {pathquery}")
+        print(f"\tParsing URL... host {hostname}, port {port}")
     
         # checking for duplicate hosts, if set length is different, not a dup
         print(f"\t\033[1mChecking host uniqueness... ", end='')
+        
         hostslen = len(hosts)
-        hosts.add(parsedurl.hostname)
+        hosts.add(hostname)
         if hostslen == len(hosts):
             print(f"failed\033[0m")
             log.debug("Duplicate Host... skipping")
             continue
         print(f"passed\033[0m")
+
         mysocket = TCPsocket() # create an object of TCP socket
         mysocket.setlogging(loglevel)
         mysocket.createSocket()
@@ -81,7 +66,7 @@ def main(): # function, method are the same
         # start measuring time, set start to current time
         start = time.time()
         # get the ip of hostname, dns lookup
-        ip = mysocket.getIP(parsedurl.hostname)
+        ip = mysocket.getIP(hostname)
         # get the end time, set end to current time
         end = time.time()
         # print how long it took, end - start time * 1000 to get in milliseconds
@@ -98,7 +83,6 @@ def main(): # function, method are the same
             continue
         print(f"passed\033[0m")
 
-
         print(f"\t\033[1mConnecting on robots... ", end='')
         start = time.time()
         
@@ -110,7 +94,7 @@ def main(): # function, method are the same
 
         # build our request
         headrequest = Request()
-        head = headrequest.headRequest(parsedurl.hostname)
+        head = headrequest.headRequest(hostname)
         # send out request
         print("\t\033[1mLoading... ", end='')
         start = time.time()
@@ -147,7 +131,7 @@ def main(): # function, method are the same
 
         # build our request
         getrequest = Request()
-        get = getrequest.getRequest(parsedurl.hostname, parsedurl.path, parsedurl.query)
+        get = getrequest.getRequest(hostname, path, query)
 
 
         print("\tLoading... ", end='')
