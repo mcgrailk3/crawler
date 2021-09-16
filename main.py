@@ -2,6 +2,7 @@
 # ID num:  1016818720, 1013412930
 
 import logging, sys, time, re
+from printthread import PrintThread
 import threading
 from urlparser import URLParser
 
@@ -14,6 +15,7 @@ from input import Input
 from duplicatecheck import DuplicateCheck
 from sharedparameters import SharedParameters
 from crawlthread import CrawlThread
+from printthread import PrintThread
 
 def main(): # function, method are the same
     startMainTime = time.time()
@@ -47,12 +49,20 @@ def main(): # function, method are the same
     shared.hostTable = set()
     shared.ipTable = set()
     shared.Q = urlqueue
-    shared.count = urlqueue.qsize()
+    qsize = urlqueue.qsize()
+    shared.count = qsize
+    shared.dnslookup = 0
+    shared.links = 0
+    shared.crawled = 0
+    shared.robots = 0
 
     for i in range(0, numthreads, 1):
         t = CrawlThread(i, "threader", shared, loglevel)
         t.start()
         threads.append(t)
+    p = PrintThread(0, threads, shared, qsize, loglevel)
+    p.start()
+    threads.append(p)
     for t in threads:
         t.join()
     print("urlQSize is ", urlqueue.qsize())

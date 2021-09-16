@@ -34,6 +34,8 @@ class TCPsocket:
     # Return the ip of input hostname. Both ip and hostname in string
     def getIP(self, hostname):
         self.host = hostname
+        if len(hostname) > 64:
+            return None
         try:
             ip = socket.gethostbyname(hostname)   # ip is a local variable to getIP(hostname), ip is of string type
         except socket.gaierror:

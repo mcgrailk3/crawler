@@ -6,3 +6,7 @@ class SharedParameters:
         self.hostTable = None
         self.ipTable = None
         self.count = None
+        self.dnslookup = None
+        self.robots = None
+        self.links = None
+        self.crawled = None
