@@ -2,6 +2,7 @@
 # ID num:  1016818720, 1013412930
 
 import logging, sys, time, re
+import threading
 from urlparser import URLParser
 
 from fileio import FileIO
@@ -10,8 +11,12 @@ from tcprequest import Request
 from queue import Queue
 from urllib.parse import urlparse
 from input import Input
+from duplicatecheck import DuplicateCheck
+from sharedparameters import SharedParameters
+from crawlthread import CrawlThread
 
 def main(): # function, method are the same
+    startMainTime = time.time()
     # loglevel setup
     loglevel = "INFO"
     # loglevel = "DEBUG"
@@ -28,12 +33,31 @@ def main(): # function, method are the same
     log.setLevel(loglevel)
 
     urlqueue = Queue()
-
     inpobj = Input()
+    dup = DuplicateCheck()
+    dup.setlogging(loglevel)
     numthreads, sizeoffile, filename = inpobj.process(urlqueue, sys.argv, mode)
     print(f"Opened {filename} with size {sizeoffile} bytes")
-    hosts = set()
-    ips = set()
+    print(f"{numthreads} threads starting...")
+
+    threads = []
+
+    shared = SharedParameters()
+    shared.lock = threading.Lock()
+    shared.hostTable = set()
+    shared.ipTable = set()
+    shared.Q = urlqueue
+    shared.count = urlqueue.qsize()
+
+    for i in range(0, numthreads, 1):
+        t = CrawlThread(i, "threader", shared, loglevel)
+        t.start()
+        threads.append(t)
+    for t in threads:
+        t.join()
+    print("urlQSize is ", urlqueue.qsize())
+
+    """
 
     # main loop creating sockets for each website
     while not urlqueue.empty():
@@ -49,12 +73,9 @@ def main(): # function, method are the same
     
         # checking for duplicate hosts, if set length is different, not a dup
         print(f"\t\033[1mChecking host uniqueness... ", end='')
-        
-        hostslen = len(hosts)
-        hosts.add(hostname)
-        if hostslen == len(hosts):
+        hostunique = dup.unique(hosts, hostname)
+        if not hostunique:
             print(f"failed\033[0m")
-            log.debug("Duplicate Host... skipping")
             continue
         print(f"passed\033[0m")
 
@@ -75,10 +96,8 @@ def main(): # function, method are the same
             continue
         # checking for duplicate ips, if length is different, not a dup
         print(f"\t\033[1mChecking IP uniqueness... ", end='')
-        ipslen = len(ips)
-        ips.add(ip)
-        if ipslen == len(ips):
-            log.debug("Duplicate IPs... skipping")
+        ipunique = dup.unique(ips, ip)
+        if not ipunique:
             print(f"failed\033[0m")
             continue
         print(f"passed\033[0m")
@@ -153,7 +172,7 @@ def main(): # function, method are the same
         end = time.time()
         print(f"done in {int((end-start)*1000)} ms with {links} links")
         mysocket.close()
-
+"""
 
 # call main() method:
 if __name__ == "__main__":

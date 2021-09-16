@@ -29,13 +29,11 @@ class Input:
     def urltext(self, queue, args):
         if len(args) != 3:
             sys.exit("Invalid amount of args, exiting...")
-        elif int(args[1]) != 1:
-            sys.exit("Can't run more than one thread currently, exiting...")
         # open file for read only
         fileop = FileIO()
         urlfile = fileop.openro(args[2])
         self.__filename = args[2]
-        numthreads = args[1]
+        numthreads = int(args[1])
         # read file line by line, put into queue
         try:
             for line in urlfile:
