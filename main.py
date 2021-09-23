@@ -55,6 +55,7 @@ def main(): # function, method are the same
     shared.links = 0
     shared.crawled = 0
     shared.robots = 0
+    shared.amtthreads = numthreads
 
     for i in range(0, numthreads, 1):
         t = CrawlThread(i, "threader", shared, loglevel)
@@ -62,9 +63,9 @@ def main(): # function, method are the same
         threads.append(t)
     p = PrintThread(0, threads, shared, qsize, loglevel)
     p.start()
-    threads.append(p)
     for t in threads:
         t.join()
+    p.join()
     print("urlQSize is ", urlqueue.qsize())
 
     """

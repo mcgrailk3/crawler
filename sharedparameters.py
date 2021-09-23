@@ -10,3 +10,4 @@ class SharedParameters:
         self.robots = None
         self.links = None
         self.crawled = None
+        self.amtthreads = None

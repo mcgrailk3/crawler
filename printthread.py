@@ -14,18 +14,19 @@ class PrintThread (threading.Thread):
         
     def run(self):
         self.count = 0
-        while len(self.threads):
+        while (self.shared.amtthreads) > 0:
             self.shared.lock.acquire()
-            print(f"[{self.count:>4}] {len(self.threads):>5}  \
-                Q {self.shared.Q.qsize():>3}  \
-                E {self.qsize-self.count:>3}  \
-                H {len(self.shared.hostTable):>3}  \
-                D {self.shared.dnslookup:>3}  \
-                I {len(self.shared.ipTable):>}  \
-                R {self.shared.robots:>3}  \
-                C {self.shared.crawled:>3}  \
-                L {self.shared.links:>3}")
+            print(f"[{self.count:>4}] {self.shared.amtthreads:>5}  \
+Q {self.shared.Q.qsize():>6}  \
+E {self.qsize-self.count:>6}  \
+H {len(self.shared.hostTable):>6}  \
+D {self.shared.dnslookup:>6}  \
+I {len(self.shared.ipTable):>6}  \
+R {self.shared.robots:>6}  \
+C {self.shared.crawled:>6}  \
+L {self.shared.links:>10}")
             #print(f"\t *** crawling {} pps @ {.1f} Mbps")
             self.shared.lock.release()
             time.sleep(2)
             self.count += 2
+        return

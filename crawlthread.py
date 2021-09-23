@@ -27,10 +27,10 @@ class CrawlThread (threading.Thread):
             self.shared.lock.acquire()
             url = self.shared.Q.get()
             self.shared.count -= 1
-            print(f"URLs left: {self.shared.count}")
+            # print(f"URLs left: {self.shared.count}")
             self.shared.lock.release()
 
-            print(f"URL: {url.strip()}")
+            # print(f"URL: {url.strip()}")
 
             hostname, port, path, query, pathquery, scheme = urlparseobj.parse(url)
 
@@ -149,4 +149,6 @@ class CrawlThread (threading.Thread):
             end = time.time()
             #print(f"done in {int((end-start)*1000)} ms with {links} links")
             mysocket.close()
-        print("thread out of loop")
+        # print("thread out of loop")
+        self.shared.amtthreads -= 1
+        return
