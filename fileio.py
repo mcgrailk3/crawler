@@ -53,6 +53,7 @@ class FileIO:
         try:
             self.__file.seek(0, os.SEEK_END)
             self.__size = self.__file.tell()
+            self.__file.seek(0)
             return self.__size
         except IOError as e:
             self.log.error("FileIO Error {}".format(e))

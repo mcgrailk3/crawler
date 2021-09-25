@@ -5,7 +5,7 @@
 
 import socket, select, logging
 
-TIMEOUT = 10 # unit is seconds
+TIMEOUT = 5 # unit is seconds
 BUF_SIZE = 1024 # unit is bytes
 
 class TCPsocket:
@@ -15,6 +15,7 @@ class TCPsocket:
         self.sock = None  # each object's instance variables
         self.host = ""  # remote host name
         self.log = logging.getLogger(__name__)
+        
         # logging.basicConfig(level=logging.DEBUG)
         #self.log.debug("create an object of TCPsocket")
 
@@ -24,6 +25,7 @@ class TCPsocket:
     def createSocket(self):
         try:
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # self.sock is an instance variable
+            self.sock.settimeout(TIMEOUT)
             self.log.debug("created a tcp socket!")
         except socket.error as e:
             self.log.error("Failed to create a TCP socket {}".format(e))
@@ -33,6 +35,7 @@ class TCPsocket:
     # given a host name, how to get its ip address
     # Return the ip of input hostname. Both ip and hostname in string
     def getIP(self, hostname):
+        self.log.debug("Getting IP....")
         self.host = hostname
         if len(hostname) > 64:
             return None
@@ -46,6 +49,7 @@ class TCPsocket:
 
     # connect to a remote server: IP address, port
     def connect(self, ip, port):
+        self.log.debug("Connecting....")
         if self.sock is None or ip is None:
             self.sock = None
             return
@@ -60,6 +64,7 @@ class TCPsocket:
 
     # return the number of bytes sent
     def send(self, request):
+        self.log.debug("Sending....")
         bytesSent = 0       # bytesSent is a local variable
         if self.sock is None:
             return 0
@@ -73,6 +78,7 @@ class TCPsocket:
 
     # Receive the reply from the server. Return the reply as string
     def receive(self):
+        self.log.debug("Receiving....")
         if self.sock is None:
             return ""
         reply = bytearray()    # b'', local variable, bytearray is multable

@@ -19,10 +19,10 @@ from printthread import PrintThread
 
 def main(): # function, method are the same
     startMainTime = time.time()
-    # loglevel setup
-    loglevel = "INFO"
+    # loglevel setup info allows most, debug for general debug messages, critical to supress errors
+    # loglevel = "INFO"
     # loglevel = "DEBUG"
-
+    loglevel = "CRITICAL"
     cmdlinemode = "single"
     txtinputmode = "textfile"
 
@@ -35,13 +35,6 @@ def main(): # function, method are the same
     log.setLevel(loglevel)
 
     urlqueue = Queue()
-    inpobj = Input()
-    dup = DuplicateCheck()
-    dup.setlogging(loglevel)
-    numthreads, sizeoffile, filename = inpobj.process(urlqueue, sys.argv, mode)
-    print(f"Opened {filename} with size {sizeoffile} bytes")
-    print(f"{numthreads} threads starting...")
-
     threads = []
 
     shared = SharedParameters()
@@ -50,24 +43,40 @@ def main(): # function, method are the same
     shared.ipTable = set()
     shared.Q = urlqueue
     qsize = urlqueue.qsize()
-    shared.count = qsize
-    shared.dnslookup = 0
-    shared.links = 0
-    shared.crawled = 0
-    shared.robots = 0
-    shared.amtthreads = numthreads
 
-    for i in range(0, numthreads, 1):
-        t = CrawlThread(i, "threader", shared, loglevel)
+    inpobj = Input(shared, sys.argv, mode)
+    inpobj.process()
+    dup = DuplicateCheck()
+    dup.setlogging(loglevel)
+    
+    inpobj.start()
+
+    print(f"Opened {inpobj.filename} with size {inpobj.sizeoffile} bytes")
+    print(f"{shared.amtthreads} threads starting...")
+
+
+    start = time.time()
+    
+    for i in range(0, shared.amtthreads, 1):
+        t = CrawlThread(i, "crawler", shared, loglevel)
         t.start()
         threads.append(t)
     p = PrintThread(0, threads, shared, qsize, loglevel)
     p.start()
     for t in threads:
         t.join()
-    p.join()
-    print("urlQSize is ", urlqueue.qsize())
+    
 
+    end = time.time()
+    totaltime = end - start
+    """
+    print(f"Extracted {} URLs @ {}/s")
+    print(f"Looked up {} DNS names @ {}/s")
+    print(f"Downloaded {} robots @ {}/s")
+    print(f"Crawled {} pages @ {}/s")
+    print(f"Parsed {} links @ {}/s")
+    print(f"HTTP codes: 2xx = , 3xx = , 4xx = , 5xx = , other = ")
+    """
     """
 
     # main loop creating sockets for each website
@@ -183,7 +192,7 @@ def main(): # function, method are the same
         end = time.time()
         print(f"done in {int((end-start)*1000)} ms with {links} links")
         mysocket.close()
-"""
+    """
 
 # call main() method:
 if __name__ == "__main__":
