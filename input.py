@@ -1,10 +1,8 @@
 # Student Names: Garrett Fitzgerald, Kevin McGrail
 # ID num:  1016818720, 1013412930
 
-from re import S
-import re
 from fileio import FileIO
-import logging, sys, threading
+import logging, sys, threading, time
 
 class Input (threading.Thread):
     def __init__(self, shared, args, mode):
@@ -20,6 +18,7 @@ class Input (threading.Thread):
         self.args = args
         self.fileop = FileIO()
         self.urlfile = None
+        self.totaltime = None
         self.log = logging.getLogger(__name__)
         logging.basicConfig(level=logging.DEBUG)
 
@@ -49,6 +48,7 @@ class Input (threading.Thread):
         return
 
     def run(self):
+        start = time.time()
         try:
             for line in self.urlfile:
                 self.shared.Q.put(line)
@@ -59,5 +59,9 @@ class Input (threading.Thread):
         except IOError:
             self.log.error("File read error")
             sys.exit("File read error, exiting...")
+        end = time.time()
+        self.totaltime = end - start
+        if self.totaltime < 1:
+            self.totaltime = 1
         return
 

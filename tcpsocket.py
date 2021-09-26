@@ -104,7 +104,7 @@ class TCPsocket:
             self.log.error("socket error in receive: {}".format(e))
             self.sock.close()
             self.sock = None
-        return reply.decode('utf-8'), bytesRecd
+        return reply.decode('utf-8', 'ignore'), bytesRecd
 
     # Close socket
     def close(self):

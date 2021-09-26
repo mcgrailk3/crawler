@@ -107,6 +107,19 @@ class CrawlThread (threading.Thread):
             responsecode = response[0].split(" ")
             # print(f"\tVerifying header... status code {responsecode[1]} {self.threadID}")
             #print("      + Parsing page... ", end='')
+            self.shared.lock.acquire()
+            if responsecode[1][0] == "2":
+                self.shared.responses[0] += 1
+            elif responsecode[1][0] == "3":
+                self.shared.responses[1] += 1
+            elif responsecode[1][0] == "4":
+                self.shared.responses[2] += 1
+            elif responsecode[1][0] == "5":
+                self.shared.responses[3] += 1
+            else:
+                self.shared.responses[4] += 1
+            self.shared.lock.release()
+            
             if responsecode[1][0] == "2" or responsecode[1][0] == "3":
                 self.shared.lock.acquire()
                 self.shared.crawled += 1

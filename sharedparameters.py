@@ -12,3 +12,4 @@ class SharedParameters:
         self.amtthreads = 0
         self.bytes = 0
         self.extracted = 0
+        self.responses = [0,0,0,0,0]
