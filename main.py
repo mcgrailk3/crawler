@@ -48,12 +48,12 @@ def main(): # function, method are the same
     inpobj.process()
     dup = DuplicateCheck()
     dup.setlogging(loglevel)
-    
-    inpobj.start()
+
+    if mode == txtinputmode:
+        inpobj.start()
 
     print(f"Opened {inpobj.filename} with size {inpobj.sizeoffile} bytes")
     print(f"{shared.amtthreads} threads starting...")
-
 
     start = time.time()
     
@@ -69,13 +69,13 @@ def main(): # function, method are the same
 
     end = time.time()
     totaltime = end - start
-
-    print(f"Extracted {shared.extracted} URLs @ {int(shared.extracted/inpobj.totaltime):d}/s")
-    print(f"Looked up {shared.dnslookup} DNS names @ {int(shared.dnslookup/totaltime):d}/s")
-    print(f"Downloaded {shared.robots} robots @ {int(shared.robots/totaltime):d}/s")
-    print(f"Crawled {shared.crawled} pages @ {int(shared.crawled/totaltime):d}/s")
-    print(f"Parsed {shared.links} links @ {int(shared.links/totaltime):d}/s")
-    print(f"HTTP codes: 2xx = {shared.responses[0]}, 3xx = {shared.responses[1]}, 4xx = {shared.responses[2]}, 5xx = {shared.responses[3]}, other = {shared.responses[4]}")
+    if mode == txtinputmode:
+        print(f"Extracted {shared.extracted} URLs @ {int(shared.extracted/inpobj.totaltime):d}/s")
+        print(f"Looked up {shared.dnslookup} DNS names @ {int(shared.dnslookup/totaltime):d}/s")
+        print(f"Downloaded {shared.robots} robots @ {int(shared.robots/totaltime):d}/s")
+        print(f"Crawled {shared.crawled} pages @ {int(shared.crawled/totaltime):d}/s")
+        print(f"Parsed {shared.links} links @ {int(shared.links/totaltime):d}/s")
+        print(f"HTTP codes: 2xx = {shared.responses[0]}, 3xx = {shared.responses[1]}, 4xx = {shared.responses[2]}, 5xx = {shared.responses[3]}, other = {shared.responses[4]}")
     
     
 # call main() method:

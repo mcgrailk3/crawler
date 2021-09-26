@@ -29,6 +29,7 @@ class URLParser:
             self.port  = 80
         else:
             self.port = parsedurl.port
+        """
         pathquery = ""
         if parsedurl.path:
             pathquery = parsedurl.path
@@ -36,10 +37,10 @@ class URLParser:
             pathquery = "/"
         if parsedurl.query:
             pathquery = pathquery + "?"+parsedurl.query
-        
-        self.scheme = parsedurl.scheme
-        self.pathquery = pathquery
+        """
+        #self.scheme = parsedurl.scheme
+        #self.pathquery = pathquery
         self.path = parsedurl.path
         self.query = parsedurl.query
         self.hostname = parsedurl.hostname
-        return self.hostname, self.port, self.path, self.query, self.pathquery, self.scheme
+        return self.hostname, self.port, self.path, self.query

@@ -21,14 +21,14 @@ class CrawlThread (threading.Thread):
     def run(self):
         dup = DuplicateCheck()
         dup.setlogging(self.log.level)
-        urlparseobj = URLParser()
+        
         while not self.shared.Q.empty():
             # get url from queue, print, parse
             url = self.shared.Q.get()
-
+            urlparseobj = URLParser()
             # print(f"URL: {url.strip()}, {self.threadID}")
 
-            hostname, port, path, query, pathquery, scheme = urlparseobj.parse(url)
+            hostname, port, path, query = urlparseobj.parse(url)
         
             # checking for duplicate hosts, if set length is different, not a dup
             self.shared.lock.acquire()
@@ -73,7 +73,6 @@ class CrawlThread (threading.Thread):
             response = data.splitlines()
             # split first line to get status code, easier than using regexs
             responsecode = response[0].split(" ")
-            # print(f"\t\033[1mVerifying header... status code {responsecode[1]}\033[0m {self.threadID}")
             
             mysocket.close()
 

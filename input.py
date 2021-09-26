@@ -33,6 +33,7 @@ class Input (threading.Thread):
         if len(self.args) != 2:
             sys.exit("Invalid amount of args, exiting...")
         self.shared.Q.put(self.args[1])
+        self.shared.amtthreads = 1
         return
 
     def urltext(self):
