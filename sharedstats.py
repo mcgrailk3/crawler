@@ -1,11 +1,6 @@
-
-class SharedParameters:
+class SharedStats:
     def __init__(self):
-        self.Q = None
         self.lock = None
-        self.hostTable = None
-        self.ipTable = None
-        """
         self.dnslookup = 0
         self.robots = 0
         self.links = 0
@@ -14,4 +9,3 @@ class SharedParameters:
         self.bytes = 0
         self.extracted = 0
         self.responses = [0,0,0,0,0]
-        """

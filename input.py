@@ -5,7 +5,7 @@ from fileio import FileIO
 import logging, sys, threading, time
 
 class Input (threading.Thread):
-    def __init__(self, shared, args, mode):
+    def __init__(self, shared, stats, args, mode):
         threading.Thread.__init__(self)
         self.__cmdlinemode = "single"
         self.__txtinputmode = "textfile"
@@ -14,6 +14,7 @@ class Input (threading.Thread):
         self.numthreads = 0
         self.sizeoffile = 0
         self.mode = mode
+        self.stats = stats
         self.shared = shared
         self.args = args
         self.fileop = FileIO()
@@ -33,7 +34,7 @@ class Input (threading.Thread):
         if len(self.args) != 2:
             sys.exit("Invalid amount of args, exiting...")
         self.shared.Q.put(self.args[1])
-        self.shared.amtthreads = 1
+        self.stats.amtthreads = 1
         return
 
     def urltext(self):
@@ -44,7 +45,7 @@ class Input (threading.Thread):
         
         self.urlfile = self.fileop.openro(self.filename)
         self.sizeoffile = self.fileop.getsize()
-        self.shared.amtthreads = int(self.args[1])
+        self.stats.amtthreads = int(self.args[1])
         # read file line by line, put into queue
         return
 
@@ -53,9 +54,9 @@ class Input (threading.Thread):
         try:
             for line in self.urlfile:
                 self.shared.Q.put(line)
-                self.shared.lock.acquire()
-                self.shared.extracted += 1
-                self.shared.lock.release()
+                self.stats.lock.acquire()
+                self.stats.extracted += 1
+                self.stats.lock.release()
             self.fileop.close()
         except IOError:
             self.log.error("File read error")

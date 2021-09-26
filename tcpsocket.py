@@ -81,7 +81,7 @@ class TCPsocket:
         self.log.debug("Receiving....")
         if self.sock is None:
             return ""
-        reply = bytearray()    # b'', local variable, bytearray is multable
+        reply = bytearray()    # b'', local variable, bytearray is mutable
         bytesRecd = 0   # local integer
         self.sock.settimeout(TIMEOUT)
         """
@@ -105,6 +105,32 @@ class TCPsocket:
             self.sock.close()
             self.sock = None
         return reply.decode('utf-8', 'ignore'), bytesRecd
+
+    def receivehead(self):
+            self.log.debug("Receiving....")
+            if self.sock is None:
+                return ""
+            reply = bytearray()    # b'', local variable, bytearray is mutable
+            bytesRecd = 0   # local integer
+            self.sock.settimeout(TIMEOUT)
+            """
+            self.sock.setblocking(1)    # flag 0 to set non-blocking mode of the socket
+            ready = select.select([self.sock], [], [], TIMEOUT) # https://docs.python.org/3/library/select.html
+            if ready[0] == []:     # timeout
+                self.log.debug("Time out on", self.host)
+                return ""
+            # else reader has data to read
+            """
+            try:
+                data = self.sock.recv(BUF_SIZE)  # returned chunk of data with max length BUF_SIZE. data is in bytes
+                #print(f"Receiving..... {data}")
+                reply += data  # append to reply
+                bytesRecd += len(data)
+            except socket.error as e:
+                self.log.error("socket error in receive: {}".format(e))
+                #self.sock.close()
+                #self.sock = None
+            return reply.decode('utf-8', 'ignore'), bytesRecd
 
     # Close socket
     def close(self):

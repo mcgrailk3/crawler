@@ -1,23 +1,26 @@
-import threading, logging
+import logging
 from tcpsocket import TCPsocket
 from tcprequest import Request
 from duplicatecheck import DuplicateCheck
 from urlparser import URLParser
+from multiprocessing import process
+import multiprocessing
 
-class CrawlThread (threading.Thread):
+
+class CrawlThread_mp (multiprocessing.process.BaseProcess):
     def __init__(self, ID, name, shared, stats, loglevel):
-        threading.Thread.__init__(self)
+        process.BaseProcess.__init__(self)
         self.threadID = ID
         self.name = name
         self.shared = shared
         self.stats = stats
         self.log = logging.getLogger(__name__)
         self.log.setLevel(loglevel)
-        
+
     def run(self):
         dup = DuplicateCheck()
         dup.setlogging(self.log.level)
-        
+
         while not self.shared.Q.empty():
             # get url from queue, print, parse
             url = self.shared.Q.get()
@@ -25,7 +28,7 @@ class CrawlThread (threading.Thread):
             # print(f"URL: {url.strip()}, {self.threadID}")
 
             hostname, port, path, query = urlparseobj.parse(url)
-        
+
             # checking for duplicate hosts, if set length is different, not a dup
             self.shared.lock.acquire()
             hostunique = dup.unique(self.shared.hostTable, hostname)
@@ -33,7 +36,7 @@ class CrawlThread (threading.Thread):
             if not hostunique:
                 continue
 
-            mysocket = TCPsocket() # create an object of TCP socket
+            mysocket = TCPsocket()  # create an object of TCP socket
             mysocket.setlogging(self.log.level)
             mysocket.createSocket()
 
@@ -43,7 +46,7 @@ class CrawlThread (threading.Thread):
             self.stats.lock.acquire()
             self.stats.dnslookup += 1
             self.stats.lock.release()
- 
+
             if not ip:
                 continue
             # checking for duplicate ips, if length is different, not a dup
@@ -52,16 +55,16 @@ class CrawlThread (threading.Thread):
             self.shared.lock.release()
             if not ipunique:
                 continue
-            
+
             if mysocket.connect(ip, port) == -1:
                 continue
 
             # build our request
             headrequest = Request()
-            head = headrequest.headRequest11(hostname)
+            head = headrequest.headRequest(hostname)
             # send out request
             mysocket.send(head)
-            data, amtbytes = mysocket.receivehead() # receive a reply from the server
+            data, amtbytes = mysocket.receive()  # receive a reply from the server
 
             if not data.strip():
                 continue
@@ -69,31 +72,30 @@ class CrawlThread (threading.Thread):
             response = data.splitlines()
             # split first line to get status code, easier than using regexs
             responsecode = response[0].split(" ")
-            #print(f"Response: {response}")
-            #mysocket.close()
+
+            mysocket.close()
 
             # if response is 200, then break out of loop, else keep going to build get request
             if responsecode[1] == "200":
-                mysocket.close()
                 self.stats.lock.acquire()
                 self.stats.robots += 1
                 self.stats.lock.release()
                 continue
-            
-            #mysocket = TCPsocket() # create an object of TCP socket
-            #mysocket.setlogging(self.log.level)
-            #mysocket.createSocket()
 
-            #if mysocket.connect(ip, port) == -1:
-            #    continue
+            mysocket = TCPsocket()  # create an object of TCP socket
+            mysocket.setlogging(self.log.level)
+            mysocket.createSocket()
+
+            if mysocket.connect(ip, port) == -1:
+                continue
 
             # build our request
             getrequest = Request()
-            get = getrequest.getRequest11(hostname, path, query)
+            get = getrequest.getRequest(hostname, path, query)
 
             # print(f"\tLoading... {self.threadID}", end='')
             mysocket.send(get)
-            data, amtbytes = mysocket.receive() # receive a reply from the server
+            data, amtbytes = mysocket.receive()  # receive a reply from the server
 
             if not data:
                 continue
@@ -101,10 +103,8 @@ class CrawlThread (threading.Thread):
             response = data.splitlines()
             # split first line to get status code, easier than using regexs
             responsecode = response[0].split(" ")
-            #print(f"Response code: {responsecode}")
-            #print(f"Response: {response}")
             # print(f"\tVerifying header... status code {responsecode[1]} {self.threadID}")
-            #print("      + Parsing page... ", end='')
+            # print("      + Parsing page... ", end='')
             if 'HTTP' not in responsecode[0]:
                 self.stats.lock.acquire()
                 self.stats.responses[4] += 1

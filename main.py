@@ -14,13 +14,14 @@ from urllib.parse import urlparse
 from input import Input
 from duplicatecheck import DuplicateCheck
 from sharedparameters import SharedParameters
+from sharedstats import SharedStats
 from crawlthread import CrawlThread
 from printthread import PrintThread
 
 def main(): # function, method are the same
     startMainTime = time.time()
     # loglevel setup info allows most, debug for general debug messages, critical to supress errors
-    # loglevel = "INFO"
+    #loglevel = "INFO"
     # loglevel = "DEBUG"
     loglevel = "CRITICAL"
     cmdlinemode = "single"
@@ -42,9 +43,11 @@ def main(): # function, method are the same
     shared.hostTable = set()
     shared.ipTable = set()
     shared.Q = urlqueue
+    stats = SharedStats()
+    stats.lock = threading.Lock()
     qsize = urlqueue.qsize()
 
-    inpobj = Input(shared, sys.argv, mode)
+    inpobj = Input(shared, stats, sys.argv, mode)
     inpobj.process()
     dup = DuplicateCheck()
     dup.setlogging(loglevel)
@@ -53,29 +56,28 @@ def main(): # function, method are the same
         inpobj.start()
 
     print(f"Opened {inpobj.filename} with size {inpobj.sizeoffile} bytes")
-    print(f"{shared.amtthreads} threads starting...")
+    print(f"{stats.amtthreads} threads starting...")
 
     start = time.time()
     
-    for i in range(0, shared.amtthreads, 1):
-        t = CrawlThread(i, "crawler", shared, loglevel)
+    for i in range(0, stats.amtthreads, 1):
+        t = CrawlThread(i, "crawler", shared, stats, loglevel)
         t.start()
         threads.append(t)
-    p = PrintThread(0, threads, shared, qsize, loglevel)
+    p = PrintThread(0, threads, shared, stats, qsize, loglevel)
     p.start()
     for t in threads:
         t.join()
-    
 
     end = time.time()
     totaltime = end - start
     if mode == txtinputmode:
-        print(f"Extracted {shared.extracted} URLs @ {int(shared.extracted/inpobj.totaltime):d}/s")
-        print(f"Looked up {shared.dnslookup} DNS names @ {int(shared.dnslookup/totaltime):d}/s")
-        print(f"Downloaded {shared.robots} robots @ {int(shared.robots/totaltime):d}/s")
-        print(f"Crawled {shared.crawled} pages @ {int(shared.crawled/totaltime):d}/s")
-        print(f"Parsed {shared.links} links @ {int(shared.links/totaltime):d}/s")
-        print(f"HTTP codes: 2xx = {shared.responses[0]}, 3xx = {shared.responses[1]}, 4xx = {shared.responses[2]}, 5xx = {shared.responses[3]}, other = {shared.responses[4]}")
+        print(f"Extracted {stats.extracted} URLs @ {int(stats.extracted/inpobj.totaltime):d}/s")
+        print(f"Looked up {stats.dnslookup} DNS names @ {int(stats.dnslookup/totaltime):d}/s")
+        print(f"Downloaded {stats.robots} robots @ {int(stats.robots/totaltime):d}/s")
+        print(f"Crawled {stats.crawled} pages @ {int(stats.crawled/totaltime):d}/s")
+        print(f"Parsed {stats.links} links @ {int(stats.links/totaltime):d}/s")
+        print(f"HTTP codes: 2xx = {stats.responses[0]}, 3xx = {stats.responses[1]}, 4xx = {stats.responses[2]}, 5xx = {stats.responses[3]}, other = {stats.responses[4]}")
     
     
 # call main() method:
