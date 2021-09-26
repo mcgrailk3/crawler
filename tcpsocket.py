@@ -5,7 +5,7 @@
 
 import socket, select, logging
 
-TIMEOUT = 5 # unit is seconds
+TIMEOUT = 3 # unit is seconds
 BUF_SIZE = 1024 # unit is bytes
 
 class TCPsocket:
@@ -104,6 +104,8 @@ class TCPsocket:
             self.log.error("socket error in receive: {}".format(e))
             self.sock.close()
             self.sock = None
+            reply = b''
+            bytesRecd = 0
         return reply.decode('utf-8', 'ignore'), bytesRecd
 
     def receivehead(self):

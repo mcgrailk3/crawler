@@ -94,7 +94,7 @@ class CrawlThread (threading.Thread):
             # print(f"\tLoading... {self.threadID}", end='')
             mysocket.send(get)
             data, amtbytes = mysocket.receive() # receive a reply from the server
-
+            mysocket.close()
             if not data:
                 continue
             # split data into lines to parse through
@@ -111,15 +111,9 @@ class CrawlThread (threading.Thread):
                 self.stats.lock.release()
                 continue
             if responsecode[1][0] == "2":
-                self.stats.lock.acquire()
-                self.stats.responses[0] += 1
-                self.stats.crawled += 1
-                self.stats.lock.release()
+                pass
             elif responsecode[1][0] == "3":
-                self.stats.lock.acquire()
-                self.stats.responses[1] += 1
-                self.stats.crawled += 1
-                self.stats.lock.release()
+                pass
             elif responsecode[1][0] == "4":
                 self.stats.lock.acquire()
                 self.stats.responses[2] += 1
@@ -138,10 +132,14 @@ class CrawlThread (threading.Thread):
 
             links = data.count('href')
             self.stats.lock.acquire()
+            if responsecode[1][0] == "2":
+                self.stats.responses[0] += 1
+            elif responsecode[1][0] == "3":
+                self.stats.responses[1] += 1
+            self.stats.crawled += 1
             self.stats.bytes += amtbytes
             self.stats.links += links
             self.stats.lock.release()
-            mysocket.close()
         self.stats.lock.acquire()
         self.stats.amtthreads -= 1
         self.stats.lock.release()
