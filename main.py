@@ -17,6 +17,7 @@ from sharedparameters import SharedParameters
 from sharedstats import SharedStats
 from crawlthread import CrawlThread
 from printthread import PrintThread
+from crawlthread_mp import CrawlThread_mp
 
 def main(): # function, method are the same
     startMainTime = time.time()
@@ -59,7 +60,12 @@ def main(): # function, method are the same
     print(f"{stats.amtthreads} threads starting...")
 
     start = time.time()
-    
+
+    #Either crawl using multithreading (threading.thread) or with multiprocessing (multiprocessing.process.BaseProcess)
+
+
+    #Multithreading
+
     for i in range(0, stats.amtthreads, 1):
         t = CrawlThread(i, "crawler", shared, stats, loglevel)
         t.start()
@@ -68,6 +74,27 @@ def main(): # function, method are the same
     p.start()
     for t in threads:
         t.join()
+
+    p.join()
+
+
+    #Multiprocessing
+    '''
+    for i in range(0, stats.amtthreads, 1):
+        t = CrawlThread_mp(i, "crawler", shared, stats, loglevel)
+        #t.start()
+        threads.append(t)
+    p = PrintThread(0, threads, shared, stats, qsize, loglevel)
+    p.start()
+
+    for t in threads:
+        #t.join()
+        t.run()
+
+    p.join()
+    '''
+
+
 
     end = time.time()
     totaltime = end - start

@@ -1,11 +1,15 @@
-import logging
+import threading, logging, sys, time, re
+from fileio import FileIO
 from tcpsocket import TCPsocket
 from tcprequest import Request
+from queue import Queue
+from urllib.parse import urlparse
+from input import Input
 from duplicatecheck import DuplicateCheck
+from sharedparameters import SharedParameters
 from urlparser import URLParser
 from multiprocessing import process
 import multiprocessing
-
 
 class CrawlThread_mp (multiprocessing.process.BaseProcess):
     def __init__(self, ID, name, shared, stats, loglevel):
@@ -61,10 +65,10 @@ class CrawlThread_mp (multiprocessing.process.BaseProcess):
 
             # build our request
             headrequest = Request()
-            head = headrequest.headRequest(hostname)
+            head = headrequest.headRequest11(hostname)
             # send out request
             mysocket.send(head)
-            data, amtbytes = mysocket.receive()  # receive a reply from the server
+            data, amtbytes = mysocket.receivehead()  # receive a reply from the server
 
             if not data.strip():
                 continue
@@ -72,37 +76,40 @@ class CrawlThread_mp (multiprocessing.process.BaseProcess):
             response = data.splitlines()
             # split first line to get status code, easier than using regexs
             responsecode = response[0].split(" ")
-
-            mysocket.close()
+            # print(f"Response: {response}")
+            # mysocket.close()
 
             # if response is 200, then break out of loop, else keep going to build get request
             if responsecode[1] == "200":
+                mysocket.close()
                 self.stats.lock.acquire()
                 self.stats.robots += 1
                 self.stats.lock.release()
                 continue
 
-            mysocket = TCPsocket()  # create an object of TCP socket
-            mysocket.setlogging(self.log.level)
-            mysocket.createSocket()
+            # mysocket = TCPsocket() # create an object of TCP socket
+            # mysocket.setlogging(self.log.level)
+            # mysocket.createSocket()
 
-            if mysocket.connect(ip, port) == -1:
-                continue
+            # if mysocket.connect(ip, port) == -1:
+            #    continue
 
             # build our request
             getrequest = Request()
-            get = getrequest.getRequest(hostname, path, query)
+            get = getrequest.getRequest11(hostname, path, query)
 
             # print(f"\tLoading... {self.threadID}", end='')
             mysocket.send(get)
             data, amtbytes = mysocket.receive()  # receive a reply from the server
-
+            mysocket.close()
             if not data:
                 continue
             # split data into lines to parse through
             response = data.splitlines()
             # split first line to get status code, easier than using regexs
             responsecode = response[0].split(" ")
+            # print(f"Response code: {responsecode}")
+            # print(f"Response: {response}")
             # print(f"\tVerifying header... status code {responsecode[1]} {self.threadID}")
             # print("      + Parsing page... ", end='')
             if 'HTTP' not in responsecode[0]:
@@ -111,15 +118,9 @@ class CrawlThread_mp (multiprocessing.process.BaseProcess):
                 self.stats.lock.release()
                 continue
             if responsecode[1][0] == "2":
-                self.stats.lock.acquire()
-                self.stats.responses[0] += 1
-                self.stats.crawled += 1
-                self.stats.lock.release()
+                pass
             elif responsecode[1][0] == "3":
-                self.stats.lock.acquire()
-                self.stats.responses[1] += 1
-                self.stats.crawled += 1
-                self.stats.lock.release()
+                pass
             elif responsecode[1][0] == "4":
                 self.stats.lock.acquire()
                 self.stats.responses[2] += 1
@@ -138,10 +139,14 @@ class CrawlThread_mp (multiprocessing.process.BaseProcess):
 
             links = data.count('href')
             self.stats.lock.acquire()
+            if responsecode[1][0] == "2":
+                self.stats.responses[0] += 1
+            elif responsecode[1][0] == "3":
+                self.stats.responses[1] += 1
+            self.stats.crawled += 1
             self.stats.bytes += amtbytes
             self.stats.links += links
             self.stats.lock.release()
-            mysocket.close()
         self.stats.lock.acquire()
         self.stats.amtthreads -= 1
         self.stats.lock.release()
